@@ -70,6 +70,18 @@ struct KreygasmToken
     // Kreygasm ChildTokens;
 };
 
+template <typename T>
+std::ostream& operator << (std::ostream& o, const std::vector<T>& Vec)
+{
+    for (T item : Vec)
+    {
+        o << item << ' ';
+    }
+    o << std::endl;
+
+    return o;
+}
+
 std::ostream& operator << (std::ostream& o, const KreygasmToken& Tok)
 {
     o << "{ ";
@@ -107,7 +119,7 @@ std::ostream& operator << (std::ostream& o, const KreygasmToken& Tok)
         o<< "Quant: Invalid, ";
     }
 
-    o << Tok.Text << "\"}";
+    o << "Text: \"" << Tok.Text << "\"}";
 
     return o;
 }
@@ -124,10 +136,12 @@ void Kreygasm::Compile()
     const int N = Tokens.size();
     NFA = GetEmptyAdjacencyMap(N + 1);
 
+    std::cout<<N<<std::endl;
     // TODO: Implement more rules and shit
     for (int i = 0; i < N; i++)
     {
         KreygasmToken Tok = Tokens[i];
+        std::cout << Tok << std::endl;
         // If we are Multiple or Variable then we can loop back to ourselves
         if (Tok.Quant == KreygasmTokenQuantity::Multiple
             || Tok.Quant == KreygasmTokenQuantity::Variable)
@@ -146,15 +160,17 @@ void Kreygasm::Compile()
             int Next = i + 1;
             KreygasmToken NextTok = Tokens[Next];
             while (Next < N
-                && !NFA[Next][Next + 1] // If this is true than the operation
-                                        // has been done previously
                 && (NextTok.Quant == KreygasmTokenQuantity::Variable
                     || NextTok.Quant == KreygasmTokenQuantity::Optional))
             {
-                NFA[Next][Next + 1] = true;
+                Next++;
+
+                NFA[i][Next] = true;
+                NextTok = Tokens[Next];
             }
         }
     }
+    std::cout << NFA;
 }
 
 bool Kreygasm::Match(const std::string& query)
@@ -327,6 +343,7 @@ int main()
 
     ParseRegexToken(pattern_str, TokenArr, i);
     do {
-        std::cout << TokenArr.Tokens.back() << std::endl;
     } while (ParseRegexToken(pattern_str, TokenArr, i));
+
+    TokenArr.Compile();
 }
